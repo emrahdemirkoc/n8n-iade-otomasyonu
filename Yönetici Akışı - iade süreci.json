@@ -1,0 +1,742 @@
+{
+  "name": "Yönetici Akışı - iade süreci",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "13fllFQvVZBDNiG8zTUPmkanozs_-Fy-dqfQQibgRBrg",
+          "mode": "list",
+          "cachedResultName": "Veri Hijyeni",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13fllFQvVZBDNiG8zTUPmkanozs_-Fy-dqfQQibgRBrg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1406715651,
+          "mode": "list",
+          "cachedResultName": "Form Yanıtları 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13fllFQvVZBDNiG8zTUPmkanozs_-Fy-dqfQQibgRBrg/edit#gid=1406715651"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "041e8f22-743e-403d-9b8b-127a8cb58c4f",
+      "name": "Google Sheets Trigger",
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "rNROL5eGIxunNOsn",
+          "name": "Google Sheets Trigger account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all().map(item => {\n  \n  let telefon = item.json.Telefon;\n  \n  // Telefon yoksa\n  if (!telefon || telefon === '') {\n    return {\n      json: {\n        ...item.json,\n        TelefonTemiz: 'YOK',\n        Uyari: 'Telefon numarası girilmemiş'\n      }\n    };\n  }\n  \n  // Telefon varsa\n  telefon = String(telefon).replace(/\\D/g, '');\n  \n  if (telefon.startsWith('0')) {\n    telefon = telefon.substring(1);\n  }\n  \n  if (!telefon.startsWith('90')) {\n    telefon = '90' + telefon;\n  }\n  \n  return {\n    json: {\n      ...item.json,\n      TelefonTemiz: telefon,\n      Uyari: '' // Boş string (undefined yerine)\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "58d7ecdd-683d-4b68-b25e-b043ad78ea3f",
+      "name": "Veri Hijyeni"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "6b6ba611-f177-492d-9ff1-25860058c81e",
+      "name": "Her Telefonu İşle"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "13fllFQvVZBDNiG8zTUPmkanozs_-Fy-dqfQQibgRBrg",
+          "mode": "list",
+          "cachedResultName": "Veri Hijyeni",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13fllFQvVZBDNiG8zTUPmkanozs_-Fy-dqfQQibgRBrg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1406715651,
+          "mode": "list",
+          "cachedResultName": "Form Yanıtları 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13fllFQvVZBDNiG8zTUPmkanozs_-Fy-dqfQQibgRBrg/edit#gid=1406715651"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Telefon",
+              "lookupValue": "=={{ $json.TelefonTemiz }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        624,
+        96
+      ],
+      "id": "92579b77-264b-46b8-b070-deaf939bacd1",
+      "name": "Geçmişi Sorgula",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Pc3Ii4NMJinKEOFQ",
+          "name": "Google Sheets - Veri Hijyeni"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gelen tüm itemları al\nconst items = $input.all();\n\n// İlk item'dan orijinal form verisini al (Loop'tan gelen)\nconst formVerisi = $('Her Telefonu İşle').item.json;\n\n// Kaç satır geldi? (Boş item varsa length = 1 ama içi boş)\nlet kayitSayisi = 0;\n\n// Eğer ilk item boş değilse say\nif (items.length > 0 && items[0].json && Object.keys(items[0].json).length > 1) {\n  kayitSayisi = items.length;\n}\n\n// Risk seviyesi belirle\nconst risk = kayitSayisi > 3 ? \"HIGH\" : \"NORMAL\";\n\n// Çıktı\nreturn [{\n  json: {\n    ...formVerisi, // Orijinal form verisi\n    RiskSeviyesi: risk,\n    GecmisKayitSayisi: kayitSayisi\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        832,
+        96
+      ],
+      "id": "49c948a1-a8d6-447e-a210-12391ec4d474",
+      "name": "Risk Hesapla"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "name": "İade Nedeni?",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        208
+      ],
+      "id": "25463979-fe24-4b13-8bd6-472452e1af9e"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "=={{ $json[\"İade Nedeni\"] }}",
+                    "rightValue": "Hasarlı",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    },
+                    "id": "0d6619ec-0086-460b-866c-c94beca33930"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "2dfbf356-deee-4219-8eed-48167e89d39f",
+                    "leftValue": "=={{ $json[\"İade Nedeni\"] }}",
+                    "rightValue": "Yanlış Ürün",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1040,
+        96
+      ],
+      "id": "be2853cd-ba9a-41ad-acf2-b4990e376b4b",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "text": "Bu fotoğrafta bir ürün hasarı var mı? Sadece şu formatla cevap ver:\n\nHASAR: [Var/Yok]\nDETAY: [Hasarın türü ve konumu, yoksa \"Hasar tespit edilmedi\"]\nGÜVENİLİRLİK: [Yüksek/Orta/Düşük]",
+        "imageUrls": "={{ $json['Ürün Fotoğrafı Lütfen fotoğraf linkini yapıştırın'] }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1216,
+        16
+      ],
+      "id": "252181dd-3ef2-44e2-9ff7-310857539f12",
+      "name": "AI Gözü",
+      "credentials": {
+        "openAiApi": {
+          "id": "wJjjjGJD2jpe7gQa",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "479149859",
+        "file": "={{ $json[\"Ürün Fotoğrafı Lütfen fotoğraf linkini yapıştırın\"] || \"https://placehold.co/600x400.png?text=Foto+Yok\" }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✅ Onayla",
+                    "additionalFields": {
+                      "callback_data": "=onay_{{ $('Risk Hesapla').item.json[\"Sipariş Numarası\"] }}"
+                    }
+                  },
+                  {
+                    "text": "❌ Reddet",
+                    "additionalFields": {
+                      "callback_data": "=red_{{ $('Risk Hesapla').item.json[\"Sipariş Numarası\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1424,
+        16
+      ],
+      "id": "1a968cf0-2e9b-4853-ad39-e5b426b4edc4",
+      "name": "Yöneticiye Sor",
+      "webhookId": "256d2b61-d125-4cc3-b6bb-a86e309953c3",
+      "credentials": {
+        "telegramApi": {
+          "id": "cfgd8FkXZO137g6p",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -112,
+        480
+      ],
+      "id": "e20ed2e7-8ae4-401a-8157-9161e9969b4a",
+      "name": "Telegram Trigger",
+      "webhookId": "f5d2a12c-623f-4600-9e54-07e070ceb571",
+      "credentials": {
+        "telegramApi": {
+          "id": "cfgd8FkXZO137g6p",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Code in JavaScript').item.json.islem }}",
+                    "rightValue": "onay",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e139ab50-8f19-4137-81de-465f72ec0ec9"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "973db5dd-2688-4365-b3f8-0fe694b517c8",
+                    "leftValue": "={{ $('Code in JavaScript').item.json.islem }}",
+                    "rightValue": "red",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        480
+      ],
+      "id": "6e7b7f36-fab0-417e-b613-f5c6c43ea02d",
+      "name": "Switch1"
+    },
+    {
+      "parameters": {
+        "resource": "callback",
+        "queryId": "={{ $('Telegram Trigger').item.json.callback_query.id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        608,
+        400
+      ],
+      "id": "3200de79-51b9-4355-854f-5bc42a6f91bd",
+      "name": "Answer Query a callback",
+      "webhookId": "9d2a23cc-9491-4b71-9df7-52b74fd586b3",
+      "credentials": {
+        "telegramApi": {
+          "id": "cfgd8FkXZO137g6p",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "callback",
+        "queryId": "={{ $('Telegram Trigger').item.json.callback_query.id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        608,
+        560
+      ],
+      "id": "c556bd03-0be0-4f72-a2cd-a418c62154af",
+      "name": "Answer Query a callback1",
+      "webhookId": "48e08d32-f5dd-47e5-852f-d9288c552eee",
+      "credentials": {
+        "telegramApi": {
+          "id": "cfgd8FkXZO137g6p",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Switch1').item.json['E-posta Adresiniz'] }}",
+        "subject": "✅ İade Talebiniz Onaylandı!",
+        "emailType": "text",
+        "message": "Merhaba,  İade talebiniz incelenmiş ve onaylanmıştır. Ödemeniz 3 iş günü içinde hesabınıza yansıyacaktır.  Bizi tercih ettiğiniz için teşekkürler!",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        784,
+        384
+      ],
+      "id": "d3798526-4bf8-4c49-b3f6-1db99f0b540d",
+      "name": "Send a message",
+      "webhookId": "3009d281-1ad7-40d4-9349-ab063c865f64",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "bVOBxXU52gr1xqQS",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Switch1').item.json['E-posta Adresiniz'] }}",
+        "subject": "⚠️ İade Talebiniz Hakkında Bilgilendirme",
+        "emailType": "text",
+        "message": "Merhaba,  İade talebiniz incelenmiştir. Gönderdiğiniz fotoğraflar ve iade politikamız gereği talebinizi şu an onaylayamıyoruz.  Detaylı bilgi için müşteri hizmetlerimizle görüşebilirsiniz. Saygılarımızla.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        800,
+        576
+      ],
+      "id": "2183e789-8539-4db7-a7a0-0f0430c18fbb",
+      "name": "Send a message1",
+      "webhookId": "6596ca16-1266-4179-9152-f6d5d19adea1",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "bVOBxXU52gr1xqQS",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Telegram'dan gelen veriyi alıyoruz (Örn: onay_6698945768)\nconst rawData = $json.callback_query.data;\n\n// Alt tireye göre bölüyoruz\nconst parts = rawData.split('_');\n\nreturn {\n  json: {\n    islem: parts[0],       // \"onay\" veya \"red\"\n    siparis_no: parts[1],  // \"6698945768\"\n    ...$json               // Diğer verileri de koru\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        480
+      ],
+      "id": "6e39a337-173a-4864-a7d1-de149164a65d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "13fllFQvVZBDNiG8zTUPmkanozs_-Fy-dqfQQibgRBrg",
+          "mode": "list",
+          "cachedResultName": "Veri Hijyeni",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13fllFQvVZBDNiG8zTUPmkanozs_-Fy-dqfQQibgRBrg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1406715651,
+          "mode": "list",
+          "cachedResultName": "Form Yanıtları 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/13fllFQvVZBDNiG8zTUPmkanozs_-Fy-dqfQQibgRBrg/edit#gid=1406715651"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Sipariş Numarası",
+              "lookupValue": "={{ $json.siparis_no }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        240,
+        480
+      ],
+      "id": "a55e0547-429a-4394-bd33-fea6e06029c8",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "Pc3Ii4NMJinKEOFQ",
+          "name": "Google Sheets - Veri Hijyeni"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "479149859",
+        "text": "=Müşteri Adı:{{ $('Risk Hesapla').item.json['Ad Soyad'] }}\nSipariş No:{{ $('Risk Hesapla').item.json['Sipariş Numarası'] }}\nSebep:{{ $('Risk Hesapla').item.json['İade Nedeni'] }}",
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "✅ Onayla",
+                    "additionalFields": {
+                      "callback_data": "=onay_{{ $('Risk Hesapla').item.json[\"Sipariş Numarası\"] }}"
+                    }
+                  },
+                  {
+                    "text": "❌ Reddet",
+                    "additionalFields": {
+                      "callback_data": "=red_{{ $('Risk Hesapla').item.json[\"Sipariş Numarası\"] }}"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1440,
+        240
+      ],
+      "id": "4e1ecfc3-a68a-407a-9ba4-962e1e493bc9",
+      "name": "Yöneticiye Sor1",
+      "webhookId": "256d2b61-d125-4cc3-b6bb-a86e309953c3",
+      "credentials": {
+        "telegramApi": {
+          "id": "cfgd8FkXZO137g6p",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "Veri Hijyeni",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Veri Hijyeni": {
+      "main": [
+        [
+          {
+            "node": "Her Telefonu İşle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Her Telefonu İşle": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Geçmişi Sorgula",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Geçmişi Sorgula": {
+      "main": [
+        [
+          {
+            "node": "Risk Hesapla",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Risk Hesapla": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "İade Nedeni?": {
+      "main": [
+        [
+          {
+            "node": "Yöneticiye Sor1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "İade Nedeni?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "AI Gözü",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "İade Nedeni?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Gözü": {
+      "main": [
+        [
+          {
+            "node": "Yöneticiye Sor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch1": {
+      "main": [
+        [
+          {
+            "node": "Answer Query a callback",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Answer Query a callback1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer Query a callback": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer Query a callback1": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Switch1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "348af02c-5cc5-4a84-8c14-4ad480372f3e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dc0ed71b2006f097180a3d35b38001edda7489c470c52ec5e22f38cd791d4ff8"
+  },
+  "id": "KBHPitOfaLX7Rgd4",
+  "tags": []
+}
