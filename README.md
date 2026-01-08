@@ -7,4 +7,4 @@ Bu proje, e-ticaret sitelerindeki iade taleplerini n8n kullanarak otomatize eder
 - Yönetici onayı istenir.
 - Kargo kodu otomatik üretilir.
 ## Kurulum
-"Detaylar eklenecek."
+**Gereksinimler:** Bu otomasyonu çalıştırmak için n8n sürüm 1.0 veya üzeri gereklidir.
