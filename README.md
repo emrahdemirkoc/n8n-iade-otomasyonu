@@ -12,6 +12,18 @@ Bu proje, e-ticaret sitelerindeki iade taleplerini n8n kullanarak otomatize eder
 - **JSON:** Veri transferi ve yapılandırma formatı.
 - **Webhook:** E-ticaret sitesinden anlık veri almak için.
 - **Git & GitHub:** Versiyon kontrolü ve dokümantasyon.
+- ## 🔄 Sistem Mimarisi ve Akış
+Bu otomasyon, müşteri ile lojistik firması arasındaki köprüyü kurar. Veri akışı şu şekildedir:
+
+`[Müşteri Formu] -> (Webhook) -> [n8n Sunucusu] -> [Yönetici Onayı] -> [Kargo API] -> [Müşteri E-postası]`
+
+**Adım Adım Süreç:**
+1. **Veri Yakalama:** E-ticaret sitesinden gelen iade talebi Webhook ile anlık olarak yakalanır.
+2. **Doğrulama:** Gelen sipariş numarası veritabanından (Google Sheets/SQL) sorgulanır.
+3. **Karar Mekanizması:**
+   - İade sebebi "Kusurlu Ürün" ise yöneticiye fotoğraf iletiliir.
+   - İade sebebi "Beden Uyumsuzluğu" ise otomatik onay verilir.
+4. **Sonuçlandırma:** Kargo entegrasyonundan iade kodu oluşturulur ve müşteriye SMS/Mail olarak iletilir.
 ## Kurulum
 **Gereksinimler:** Bu otomasyonu çalıştırmak için n8n sürüm 1.0 veya üzeri gereklidir.
 ## 🗺️ Yol Haritası (Roadmap)
