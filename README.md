@@ -31,3 +31,8 @@ Bu otomasyon, müşteri ile lojistik firması arasındaki köprüyü kurar. Veri
 - [ ] DigitalOcean sunucu kurulumu ⏳
 - [ ] Webhook bağlantılarının test edilmesi
 - [ ] Telegram bot entegrasyonu
+---
+## 📞 İletişim & Destek
+Bu proje veya benzer n8n otomasyonları hakkında danışmanlık almak isterseniz:
+👉 **Web Sitemi Ziyaret Edin:** [emrahdemirkoc.com](https://emrahdemirkoc.com)
+📧 **E-posta:** emrahdemirkoc@gmail.com
